@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation'
 import Calendar from '@/components/Calendar'
 import EventForm from '@/components/EventForm'
 import TrainSuggestion from '@/components/TrainSuggestion'
+import MemoWidget from '@/components/MemoWidget'
+import UniversalSuggestionBox from '@/components/UniversalSuggestionBox'
+import PersonalInfoIndicator from '@/components/PersonalInfoIndicator'
 import { Event } from '@/types'
-import { LogOut, Plus } from 'lucide-react'
+import { LogOut, Plus, LayoutGrid, Settings } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -14,22 +17,30 @@ export default function Dashboard() {
   const [events, setEvents] = useState<Event[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [showEventForm, setShowEventForm] = useState(false)
-  const [currentLocation] = useState('東京駅') // 仮の位置情報
+  const [currentLocation] = useState('東京駅')
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
-    // ユーザー確認
+    // Check authentication
     const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    const token = localStorage.getItem('token')
+    
+    if (!userData || !token) {
+      router.push('/login')
       return
     }
+    
     setUser(JSON.parse(userData))
     loadEvents()
   }, [])
 
   const loadEvents = async () => {
     try {
-      const res = await fetch('/api/events')
+      const res = await fetch('/api/events', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
       if (res.ok) {
         const data = await res.json()
         setEvents(data)
@@ -41,14 +52,18 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('user')
-    router.push('/')
+    localStorage.removeItem('token')
+    router.push('/login')
   }
 
   const handleEventCreate = async (eventData: Partial<Event>) => {
     try {
       const res = await fetch('/api/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
           ...eventData,
           userId: user.id
@@ -72,28 +87,42 @@ export default function Dashboard() {
   })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-      {/* ヘッダー */}
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Enhanced Header */}
+      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">HomePA カレンダー</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                HomePA Dashboard
+              </h1>
               <p className="text-sm text-gray-600">
-                ようこそ、{user?.name}さん | 現在地: {currentLocation}
+                {user?.name}さん | 📍 {currentLocation}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setLayoutMode(layoutMode === 'grid' ? 'list' : 'grid')}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => router.push('/settings')}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
               <button
                 onClick={() => setShowEventForm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md"
               >
                 <Plus className="w-4 h-4" />
-                予定を追加
+                イベント追加
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 ログアウト
@@ -103,36 +132,66 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* カレンダー */}
-          <div className="lg:col-span-2">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <div className={`${layoutMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-3 gap-6' : 'space-y-6'}`}>
+          {/* Left Column - Calendar & Train Suggestions */}
+          <div className="lg:col-span-2 space-y-6">
             <Calendar
               events={events}
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
             />
-          </div>
-
-          {/* サイドバー */}
-          <div className="space-y-6">
-            {/* 今日の予定と電車提案 */}
             <TrainSuggestion
               events={todayEvents}
               currentLocation={currentLocation}
             />
           </div>
+
+          {/* Right Column - Widgets */}
+          <div className="space-y-6">
+            {/* Universal Suggestion Box */}
+            <UniversalSuggestionBox />
+            
+            {/* Memo Widget */}
+            <MemoWidget />
+            
+            {/* Personal Info Indicator */}
+            <PersonalInfoIndicator />
+          </div>
         </div>
       </main>
 
-      {/* イベント作成フォーム */}
+      {/* Event Form Modal */}
       {showEventForm && (
-        <EventForm
-          onClose={() => setShowEventForm(false)}
-          onSubmit={handleEventCreate}
-          initialDate={selectedDate}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <EventForm
+              selectedDate={selectedDate}
+              onSubmit={handleEventCreate}
+              onClose={() => setShowEventForm(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   )
 }
+
+// Add animations to globals.css
+/*
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+*/
