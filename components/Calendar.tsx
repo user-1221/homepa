@@ -117,7 +117,7 @@ export default function Calendar({ events, selectedDate, onDateSelect }: Calenda
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map((event, idx) => (
                   <div
-                    key={event.id}
+                    key={`${event.id || 'event'}-${idx}`}
                     className="text-xs truncate flex items-center gap-1"
                   >
                     <div className={`w-2 h-2 rounded-full ${getImportanceColor(event.importance)}`} />
@@ -141,8 +141,8 @@ export default function Calendar({ events, selectedDate, onDateSelect }: Calenda
           {format(selectedDate, 'M月d日(E)', { locale: ja })}の予定
         </h3>
         <div className="space-y-2">
-          {getEventsForDay(selectedDate).map(event => (
-            <div key={event.id} className="p-3 bg-gray-50 rounded-lg">
+          {getEventsForDay(selectedDate).map((event, idx) => (
+            <div key={`${event.id || 'event'}-${idx}`} className="p-3 bg-gray-50 rounded-lg">
               <div className="flex justify-between items-start">
                 <div>
                   <h4 className="font-medium text-gray-900">{event.title}</h4>

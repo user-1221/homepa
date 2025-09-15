@@ -90,43 +90,52 @@ export default function Dashboard() {
     return eventDate.toDateString() === today.toDateString()
   })
 
+  // Simple, clean styling
+  const backgroundClass = 'min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50'
+  const headerClass = 'bg-white shadow-sm border-b sticky top-0 z-50'
+  const titleClass = 'text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'
+  const subtitleClass = 'text-sm text-gray-600'
+  const buttonClass = 'p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors'
+  const addEventButtonClass = 'flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md'
+  const logoutButtonClass = 'flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors'
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className={backgroundClass}>
       {/* Enhanced Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+      <header className={headerClass}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className={titleClass}>
                 HomePA Dashboard
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className={subtitleClass}>
                 {user?.name}さん | 📍 {currentLocation}
               </p>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setLayoutMode(layoutMode === 'grid' ? 'list' : 'grid')}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className={buttonClass}
               >
                 <LayoutGrid className="w-5 h-5" />
               </button>
               <button
                 onClick={() => router.push('/settings')}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className={buttonClass}
               >
                 <Settings className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setShowEventForm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md"
+                className={addEventButtonClass}
               >
                 <Plus className="w-4 h-4" />
                 イベント追加
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className={logoutButtonClass}
               >
                 <LogOut className="w-4 h-4" />
                 ログアウト
