@@ -23,10 +23,9 @@ export default function Dashboard() {
   useEffect(() => {
     // Check authentication
     const userData = localStorage.getItem('user')
-    const token = localStorage.getItem('token')
     
-    if (!userData || !token) {
-      router.push('/login')
+    if (!userData) {
+      router.push('/')
       return
     }
     
@@ -36,11 +35,7 @@ export default function Dashboard() {
 
   const loadEvents = async () => {
     try {
-      const res = await fetch('/api/events', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+      const res = await fetch('/api/events')
       if (res.ok) {
         const data = await res.json()
         setEvents(data)
@@ -50,10 +45,20 @@ export default function Dashboard() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
-    router.push('/login')
+  const handleLogout = async () => {
+    try {
+      // Call logout API to clear server-side session
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      // Clear client-side storage regardless of API call result
+      localStorage.removeItem('user')
+      router.push('/')
+    }
   }
 
   const handleEventCreate = async (eventData: Partial<Event>) => {
@@ -61,8 +66,7 @@ export default function Dashboard() {
       const res = await fetch('/api/events', {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           ...eventData,
@@ -167,7 +171,7 @@ export default function Dashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <EventForm
-              selectedDate={selectedDate}
+              initialDate={selectedDate}
               onSubmit={handleEventCreate}
               onClose={() => setShowEventForm(false)}
             />

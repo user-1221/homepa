@@ -12,13 +12,39 @@ export default function LoginPage() {
     password: '',
     name: ''
   })
+  const [passwordStrength, setPasswordStrength] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const validatePassword = (password: string) => {
+    if (password.length < 8) return 'パスワードは8文字以上で入力してください'
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      return 'パスワードは大文字、小文字、数字を含む必要があります'
+    }
+    return ''
+  }
+
+  const handlePasswordChange = (password: string) => {
+    setFormData(prev => ({ ...prev, password }))
+    if (!isLogin) {
+      setPasswordStrength(validatePassword(password))
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
+
+    // Validate password for registration
+    if (!isLogin) {
+      const passwordError = validatePassword(formData.password)
+      if (passwordError) {
+        setError(passwordError)
+        setLoading(false)
+        return
+      }
+    }
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
     
@@ -32,6 +58,10 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (!res.ok) {
+        // Handle rate limiting specifically
+        if (res.status === 429) {
+          throw new Error(data.error || '登録試行回数が上限に達しました。しばらくしてからもう一度お試しください。')
+        }
         throw new Error(data.error || 'エラーが発生しました')
       }
 
@@ -104,11 +134,14 @@ export default function LoginPage() {
               <input
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => handlePasswordChange(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="••••••••"
                 required
               />
+              {!isLogin && passwordStrength && (
+                <p className="text-sm text-red-500 mt-1">{passwordStrength}</p>
+              )}
             </div>
           </div>
 
@@ -146,4 +179,3 @@ export default function LoginPage() {
     </div>
   )
 }
-console.log("hello from update!")
