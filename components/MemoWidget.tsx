@@ -1,14 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Tag } from 'lucide-react'
 
 interface Memo {
-  id: string
+  _id: string
   content: string
   tags: string[]
   category: string
   createdAt: Date
+  userId: string
+  isProcessed: boolean
+  extractedInfo?: {
+    tasks: string[]
+    events: string[]
+    preferences?: any
+  }
 }
 
 interface MemoWidgetProps {
@@ -20,9 +27,33 @@ export default function MemoWidget({ userId }: MemoWidgetProps) {
   const [newMemo, setNewMemo] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('general')
   const [showForm, setShowForm] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  // Load memos when component mounts
+  useEffect(() => {
+    loadMemos()
+  }, [])
+
+  const loadMemos = async () => {
+    try {
+      const res = await fetch('/api/memos')
+      if (res.ok) {
+        const data = await res.json()
+        setMemos(data)
+      } else {
+        console.error('Failed to load memos')
+      }
+    } catch (error) {
+      console.error('Failed to load memos:', error)
+    }
+  }
 
   const handleAddMemo = async () => {
     if (!newMemo.trim()) return
+
+    setLoading(true)
+    setError('')
 
     try {
       const res = await fetch('/api/memos', {
@@ -40,9 +71,15 @@ export default function MemoWidget({ userId }: MemoWidgetProps) {
         setMemos(prev => [...prev, memo])
         setNewMemo('')
         setShowForm(false)
+      } else {
+        const errorData = await res.json()
+        setError(errorData.error || 'メモの保存に失敗しました')
       }
     } catch (error) {
       console.error('Failed to add memo:', error)
+      setError('メモの保存に失敗しました')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -68,6 +105,11 @@ export default function MemoWidget({ userId }: MemoWidgetProps) {
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             rows={3}
           />
+          {error && (
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+              {error}
+            </div>
+          )}
           <div className="flex items-center gap-2 mt-2">
             <select
               value={selectedCategory}
@@ -81,12 +123,17 @@ export default function MemoWidget({ userId }: MemoWidgetProps) {
             </select>
             <button
               onClick={handleAddMemo}
-              className="px-4 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+              disabled={loading}
+              className="px-4 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
             >
-              保存
+              {loading ? '保存中...' : '保存'}
             </button>
             <button
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false)
+                setError('')
+                setNewMemo('')
+              }}
               className="px-4 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
             >
               キャンセル
@@ -100,7 +147,7 @@ export default function MemoWidget({ userId }: MemoWidgetProps) {
           <p className="text-gray-500 text-center py-4">メモがありません</p>
         ) : (
           memos.map((memo) => (
-            <div key={memo.id} className="p-3 bg-gray-50 rounded-lg border">
+            <div key={memo._id} className="p-3 bg-gray-50 rounded-lg border">
               <p className="text-gray-800 mb-2">{memo.content}</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
